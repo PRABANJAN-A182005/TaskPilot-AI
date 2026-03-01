@@ -1,6 +1,4 @@
----
-
-# 🚀 TaskPilot AI
+🚀 TaskPilot AI
 
 > AI-Powered Project Execution & Collaborative Team Workspace
 
@@ -8,9 +6,7 @@ TaskPilot AI is a full-stack AI-driven project execution platform that evolved f
 
 It combines structured task management, AI automation, performance analytics, sprint planning, and real-time collaboration — all within a modern, mobile-first SaaS architecture.
 
----
-
-# 📌 Project Evolution
+📌 Project Evolution
 
 TaskPilot AI was developed in three major phases:
 

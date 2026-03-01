@@ -1,0 +1,281 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String          @id @default(uuid())
+  email         String          @unique
+  name          String?
+  createdAt     DateTime        @default(now())
+  isDeleted     Boolean?        @default(false)
+  bio           String?
+  updatedAt     DateTime?       @updatedAt
+  avatar        String?
+  avatarKey     String?
+  performanceAi Json?
+  messages      ChatMessage[]
+  dailyUpdates  DailyUpdate[]
+  projects      Project[]       @relation("ProjectOwner")
+  memberOf      ProjectMember[]
+  assignedTasks Task[]          @relation("AssignedTasks")
+  identities    UserIdentity[]
+
+  @@index([email])
+}
+
+model UserIdentity {
+  id         String   @id @default(uuid())
+  userId     String
+  provider   String
+  providerId String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isDeleted  Boolean? @default(false)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+model Otp {
+  id         String   @id @default(uuid())
+  identifier String
+  type       String
+  otp        String
+  expiresAt  DateTime
+  attempts   Int      @default(0)
+  verified   Boolean  @default(false)
+  purpose    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isDeleted  Boolean? @default(false)
+
+  @@index([identifier, type])
+  @@index([expiresAt])
+  @@index([identifier, type, verified])
+}
+
+model Project {
+  id               String              @id @default(uuid())
+  name             String
+  description      String
+  progress         Int                 @default(0)
+  isArchived       Boolean             @default(false)
+  userId           String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  isDeleted        Boolean             @default(false)
+  teamMode         Boolean             @default(false)
+  riskMonitoringAi Json?
+  sprintPlanAi     Json?
+  messages         ChatMessage[]
+  dailyUpdates     DailyUpdate[]
+  meetings         Meeting[]
+  user             User                @relation("ProjectOwner", fields: [userId], references: [id])
+  invitations      ProjectInvitation[]
+  members          ProjectMember[]
+  shares           ProjectShare[]
+  sprints          Sprint[]
+  tasks            Task[]
+
+  @@index([userId])
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  role      String   @default("MEMBER")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+  status    String?  @default("JOINED")
+  project   Project  @relation(fields: [projectId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ProjectInvitation {
+  id        String   @id @default(uuid())
+  projectId String
+  email     String
+  role      String   @default("MEMBER")
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, email])
+  @@index([projectId])
+  @@index([email])
+}
+
+model DailyUpdate {
+  id          String   @id @default(uuid())
+  projectId   String
+  userId      String
+  summary     String
+  blockers    String?
+  suggestions String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted   Boolean  @default(false)
+  project     Project  @relation(fields: [projectId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id         String   @id @default(uuid())
+  projectId  String
+  userId     String
+  receiverId String?
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  isDeleted  Boolean  @default(false)
+  project    Project  @relation(fields: [projectId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([receiverId])
+}
+
+model Sprint {
+  id        String   @id @default(uuid())
+  projectId String
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  goal      String?
+  status    String   @default("Planned")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+  project   Project  @relation(fields: [projectId], references: [id])
+  tasks     Task[]
+
+  @@index([projectId])
+}
+
+model Task {
+  id              String       @id @default(uuid())
+  projectId       String
+  title           String
+  description     String
+  deadline        DateTime?
+  priority        String       @default("Medium")
+  status          String       @default("Todo")
+  strategySummary String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  isDeleted       Boolean      @default(false)
+  assignedToId    String?
+  sprintId        String?
+  attachments     Attachment[]
+  subtasks        SubTask[]
+  assignedTo      User?        @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  project         Project      @relation(fields: [projectId], references: [id])
+  sprint          Sprint?      @relation(fields: [sprintId], references: [id])
+
+  @@index([projectId])
+  @@index([sprintId])
+  @@index([assignedToId])
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  taskId     String
+  userId     String
+  name       String
+  url        String
+  storageKey String
+  fileType   String
+  size       Int
+  createdAt  DateTime @default(now())
+  isDeleted  Boolean  @default(false)
+  task       Task     @relation(fields: [taskId], references: [id])
+
+  @@index([taskId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  content   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+
+  @@index([userId])
+}
+
+model Meeting {
+  id        String   @id @default(uuid())
+  projectId String
+  userId    String
+  notes     String
+  summary   String?
+  createdAt DateTime @default(now())
+  isDeleted Boolean  @default(false)
+  project   Project  @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model ProjectShare {
+  id        String    @id @default(uuid())
+  projectId String
+  token     String    @unique
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  isDeleted Boolean   @default(false)
+  project   Project   @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+model UserPerformance {
+  id                String   @id @default(uuid())
+  userId            String
+  weekNumber        Int
+  year              Int
+  productivityScore Float
+  suggestions       String?
+  createdAt         DateTime @default(now())
+  isDeleted         Boolean  @default(false)
+
+  @@index([userId])
+}
+
+model SubTask {
+  id          String   @id @default(uuid())
+  taskId      String
+  title       String
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted   Boolean  @default(false)
+  order       Int      @default(0)
+  task        Task     @relation(fields: [taskId], references: [id])
+
+  @@index([taskId])
+}

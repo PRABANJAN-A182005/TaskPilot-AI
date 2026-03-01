@@ -1,4 +1,4 @@
-🚀 TaskPilot AI
+# 🚀 TaskPilot AI
 
 > AI-Powered Project Execution & Collaborative Team Workspace
 
@@ -8,7 +8,7 @@ It combines structured task management, AI automation, performance analytics, sp
 
 ---
 
-#📌 Project Evolution
+# 📌 Project Evolution
 
 TaskPilot AI was developed in three major phases:
 
